@@ -5,51 +5,48 @@ const blocks = reactive([
    '# Title 1',
    '## Title 2',
    '### Title 3',
-   'Texto **bold**, *italic*, superscript _subscript_, ~~strike~~, __underline__, `code`, ```code```',
+   '#### Title 4',
+   '##### Title 5',
+   'Text **bold**, *italic*, ~~strike~~, __underline__, `code`',
    // All markdown syntax
    '- list item 1',
    '- list item 2',
-   '- list item 3',
    '1. list item 1',
    '2. list item 2',
-   '3. list item 3',
    '> blockquote',
-   '> blockquote',
+   '[Google link](http://google.com/)',
 ])
 
-
-function getBlockStyled(value: string): string {
-   const text = {
-      start: value.split(' ')[0],
-      valueEscaped: value
-   }
-
-   text.valueEscaped = text.valueEscaped.substring(text.start.length).replace(/&/g, "&amp;")
+function escapeHtml(text: string): string {
+   return text.replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;")
+}
 
 
-   text.valueEscaped = text.valueEscaped.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-   text.valueEscaped = text.valueEscaped.replace(/\*(.*?)\*/g, '<i>$1</i>')
-   text.valueEscaped = text.valueEscaped.replace(/\_\_(.*?)\_\_/g, '<u>$1</u>')
-   text.valueEscaped = text.valueEscaped.replace(/\~\~(.*?)\~\~/g, '<s>$1</s>')
-   text.valueEscaped = text.valueEscaped.replace(/\`(.*?)\`/g, '<code>$1</code>')
-   text.valueEscaped = text.valueEscaped.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
-   text.valueEscaped = text.valueEscaped.replace(/\n/g, '<br>')
-   text.valueEscaped = text.valueEscaped.replace(/\s/g, '&nbsp;')
-
-
-   if (text.start.includes('#')) {
-      return `<h${text.start.length}>${text.valueEscaped}</h${text.start.length}>`
-   } else if (text.start === '>') {
-      return `<blockquote>${text.valueEscaped}</blockquote>`
-   } else if (text.start === '-') {
-      return `<ul><li>${text.valueEscaped}</li></ul>`
-   } else {
-      return `<p>${text.start + '' + text.valueEscaped}</p>`
+function getBlockStyled(value: string): string {
+   const text = {
+      start: escapeHtml(value.split(' ')[0]),
+      escaped: escapeHtml(value.substring(value.split(' ')[0].length)),
+      raw: value
    }
+
+   text.escaped = text.escaped.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+   text.escaped = text.escaped.replace(/\*(.*?)\*/g, '<i>$1</i>')
+   text.escaped = text.escaped.replace(/\_\_(.*?)\_\_/g, '<u>$1</u>')
+   text.escaped = text.escaped.replace(/\~\~(.*?)\~\~/g, '<s>$1</s>')
+   text.escaped = text.escaped.replace(/\`(.*?)\`/g, '<code>$1</code>')
+
+   // text.escaped = text.escaped.replace(/\n/g, '<br>')
+   // text.escaped = text.escaped.replace(/\s/g, '&nbsp;')
+
+   if (text.start.includes('#')) return `<h${text.start.length}>${text.escaped}</h${text.start.length}>`
+   else if (text.start === '>') return `<blockquote>${text.escaped}</blockquote>`
+   else if (text.start === '-') return `<ul><li>${text.escaped}</li></ul>`
+   else if (text.raw.match(/\[(.*?)\]\((.*?)\)/g)) return text.raw.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+   else return `<p>${text.start + '' + text.escaped}</p>`
 }
 
 function inputDivText(payload: Event) {
@@ -189,5 +186,19 @@ function inputDivText(payload: Event) {
       padding-left: 40px;
    }
 
+   code {
+      background: rgba(0, 0, 0, 0.075);
+      padding: 0 8px;
+      border-radius: 4px;
+   }
+
+   a {
+      color: rgb(6, 133, 212);
+      font-weight: 500;
+
+      &:hover {
+         text-decoration: none;
+      }
+   }
 }
 </style>
