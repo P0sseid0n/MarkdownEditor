@@ -28,7 +28,7 @@ function escapeHtml(text: string): string {
 
 function getBlockStyled(value: string): string {
    const text = {
-      start: escapeHtml(value.split(' ')[0]),
+      start: value.split(' ')[0],
       escaped: escapeHtml(value.substring(value.split(' ')[0].length)),
       raw: value
    }
@@ -46,23 +46,55 @@ function getBlockStyled(value: string): string {
    else if (text.start === '>') return `<blockquote>${text.escaped}</blockquote>`
    else if (text.start === '-') return `<ul><li>${text.escaped}</li></ul>`
    else if (text.raw.match(/\[(.*?)\]\((.*?)\)/g)) return text.raw.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-   else return `<p>${text.start + '' + text.escaped}</p>`
+   else return `<p>${escapeHtml(text.start) + '' + text.escaped}</p>`
 }
 
 function inputDivText(payload: Event) {
    const pre = payload.target as HTMLDivElement
    blocks.length = 0
-      ;[...pre.children].forEach((element, index) => {
-         const p = element as HTMLParagraphElement
-         blocks[index] = p.innerText
-      })
+   const children = [...pre.children]
+   children.forEach((element, index) => {
+      const p = element as HTMLParagraphElement
+      blocks[index] = p.innerText
+   })
+}
+
+function pasteText(event: ClipboardEvent) {
+   const clipboardText = event.clipboardData?.getData('text/plain')
+
+
+   if (!clipboardText) return
+
+   const path = (event as ClipboardEvent & { path: HTMLElement[] }).path
+
+   const pre = path.find(element => element.tagName === 'PRE') as HTMLPreElement
+
+   const selection = window.getSelection()
+   if (!selection?.rangeCount) return
+
+   selection.deleteFromDocument()
+
+   clipboardText.split(/[\r\n]/gm).forEach(text => {
+
+      const p = document.createElement('p')
+      if (text === '') p.innerHTML = '<br>'
+      else p.innerText = text
+      pre.appendChild(p)
+   })
+
+   const children = [...pre.children]
+
+   children.forEach((element, index) => {
+      const p = element as HTMLParagraphElement
+      blocks[index] = p.innerText
+   })
 }
 </script>
 
 <template>
    <section id="input">
       <main>
-         <pre contenteditable @input="inputDivText"
+         <pre contenteditable @paste.prevent="pasteText" @input="inputDivText"
             @blur="inputDivText"><p v-for="block in blocks" v-text="block" v-once ></p></pre>
       </main>
    </section>
